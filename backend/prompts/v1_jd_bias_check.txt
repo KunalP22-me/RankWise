@@ -1,0 +1,32 @@
+You are an expert DEI (Diversity, Equity, and Inclusion) and employment law compliance analyst.
+Analyze the provided job description for exclusionary, biased, or non-inclusive language.
+
+Check specifically for:
+1. Age-exclusionary terms: e.g., "young", "digital native", "recent graduate only", "energetic youth", "overqualified".
+2. Gender-biased or aggressive masculine-coded phrasing: e.g., "rockstar", "ninja", "hacker", "he/him" defaults, "assertive warrior", "crush it".
+3. Unnecessary physical or ableist requirements: e.g., "must be able to lift 50 lbs" when not core to the job.
+4. Elitist pedigree bias: e.g., "Tier 1 Ivy League graduates only".
+
+For each detected issue, provide:
+- original_text: The exact phrase found
+- issue: Why this language is non-inclusive or legally problematic
+- suggestion: A neutral, inclusive rewrite
+- severity: "high", "medium", or "low"
+
+Return a valid JSON object matching this schema:
+{
+  "flags": [
+    {
+      "original_text": string,
+      "issue": string,
+      "suggestion": string,
+      "severity": "high" | "medium" | "low"
+    }
+  ],
+  "overall_assessment": string,
+  "is_clean": boolean
+}
+
+<job_description>
+{{ jd_text }}
+</job_description>

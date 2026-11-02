@@ -1,0 +1,39 @@
+You are an expert talent recruiter and technical job analyst.
+Analyze the job description provided below and extract structured hiring requirements.
+
+Strict instructions:
+1. Divide requirements into "must_have" (strictly mandatory for the role) and "nice_to_have" (preferred bonus qualifications).
+2. Extract the minimum required years of experience (integer) if mentioned, or null.
+3. Identify seniority level (e.g., "Junior", "Mid-level", "Senior", "Lead", "Staff", "Director").
+4. Extract minimum education requirement (e.g., "Bachelor's in Computer Science or equivalent", "Master's preferred", null).
+5. Extract key responsibilities as a concise list of strings.
+6. Extract implied skills: technical or domain competencies that the job description demands by context even if not explicitly spelled out (e.g., "scale high-throughput data ingestion pipelines" implies "Kafka", "Distributed Systems", "ETL", "SQL").
+
+Return a valid JSON object matching this schema:
+{
+  "must_have": [
+    {
+      "text": string,
+      "type": "must_have",
+      "category": string,
+      "implied_skills": [string, ...]
+    }
+  ],
+  "nice_to_have": [
+    {
+      "text": string,
+      "type": "nice_to_have",
+      "category": string,
+      "implied_skills": [string, ...]
+    }
+  ],
+  "minimum_experience_years": int or null,
+  "seniority_level": string or null,
+  "education_requirement": string or null,
+  "responsibilities": [string, ...],
+  "implied_skills": [string, ...]
+}
+
+<job_description>
+{{ jd_text }}
+</job_description>
