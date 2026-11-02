@@ -5,13 +5,13 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.39-FF4B4B.svg)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-> **Core Principle:** *"The LLM reads and explains; deterministic code scores."*
+> **Core Principle:** *"The LLM reads and verifies evidence; deterministic code scores."*
 
 ---
 
 ## 1. System Architecture
 
-RankWise is designed to overcome the critical pitfalls of legacy keyword-matching ATS systems and unconstrained generative AI scorers. The LLM extracts semantic information, judges evidence snippets, and formulates grounded explanations, but the **final numeric ranking score is always computed strictly by deterministic, auditable code**.
+RankWise is designed to overcome the critical pitfalls of legacy keyword-matching ATS systems and unconstrained generative AI scorers. The LLM extracts semantic information and categorizes evidence snippets (`Strong`, `Partial`, or `None`), but the **final numeric ranking score is always computed strictly by transparent, deterministic code formulas**.
 
 ```mermaid
 flowchart TD
@@ -37,7 +37,6 @@ flowchart TD
         L --> M[Deterministic Code Formula]
         M -->|verdict × sim × loc × recency| N[Per-Requirement Scores]
         N --> O[Overall Weighted Score Sum]
-        O --> P[Grounded Explainer: Strengths, Gaps, Interview Qs]
     end
 
     subgraph SAFEGUARDS["4. Bias Auditing & Overrides"]
@@ -48,7 +47,8 @@ flowchart TD
     end
 
     subgraph UI["5. Recruiter Dashboard"]
-        P --> U[Streamlit SaaS Dashboard]
+        N --> U[Streamlit SaaS Dashboard]
+        O --> U
         Q --> U
         R --> U
         S --> U
@@ -66,6 +66,7 @@ flowchart TD
 | **Keyword Stuffer Resistance** | ❌ Fails (ranks word-stuffed resumes #1) | ⚠️ Easily tricked by prompt injection | ✅ Immune (evidence judge verifies applied context) |
 | **Scoring Transparency** | Black-box boolean / keyword count | Stochastic, non-reproducible | **100% Deterministic Code Formula** |
 | **Synonym & Taxonomy Understanding** | ❌ None (*PyTorch* ≠ *Deep Learning*) | Unpredictable | ✅ Hierarchical Skill Ontology with partial credit |
+| **Evidence Grounding** | None | Hallucinated summaries | Grounded text snippets with exact character offsets |
 | **Bias Mitigation** | None | Disclaimer only | Real Blind Mode, Counterfactual Swaps, EEOC 80% Rule |
 | **Auditability** | Limited | None | Immutable SQLite / Postgres Audit Log |
 
@@ -80,6 +81,7 @@ Generative LLMs are prone to score drift, hallucination, non-deterministic varia
    $$\text{ReqScore} = \text{VerdictMultiplier} \times (0.45 \cdot \text{Sim} + 0.30 \cdot \text{LocWeight} + 0.15 \cdot \text{Recency} + 0.10 \cdot \text{Duration})$$
 3. **If verdict is `None`**, the score is mathematically clamped to `0.0`, eliminating false positive keyword stuffing.
 4. **Overall Score** is a transparent weighted sum of Must-Haves, Nice-to-Haves, Experience Fit, and Education Fit configured per job.
+5. **Streamlined Recruiter Experience**: Focus is maintained on verified, auditable evidence and recruiter control (score overrides), without unverified generative narrative text.
 
 ---
 
@@ -103,13 +105,14 @@ Ablation evaluation was conducted across 45 labeled candidate resumes across 3 r
 
 ### Installation
 
-1. **Clone and enter the directory**:
+1. **Clone the repository and enter the directory**:
    ```bash
-   cd "minor proj/backend"
+   git clone https://github.com/KunalP22-me/RankWise.git
+   cd RankWise/backend
    ```
 
 2. **Activate the virtual environment**:
-   - Windows:
+   - Windows (PowerShell):
      ```powershell
      .\venv\Scripts\Activate.ps1
      ```
@@ -133,7 +136,7 @@ Ablation evaluation was conducted across 45 labeled candidate resumes across 3 r
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
-   API docs available at: `http://127.0.0.1:8000/docs`
+   Interactive Swagger API docs available at: `http://127.0.0.1:8000/docs`
 
 6. **Start the Streamlit Recruiter Dashboard** (Terminal 2):
    ```bash
@@ -145,10 +148,13 @@ Ablation evaluation was conducted across 45 labeled candidate resumes across 3 r
 
 ## 6. Environment Variables (`.env`)
 
+Configuration is managed via Pydantic Settings in `backend/app/config.py`. Copy `.env.example` to `backend/.env` to customize:
+
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | `sqlite:///./rankwise.db` | SQLAlchemy database URL (swappable to Postgres) |
-| `LLM_PROVIDER` | `mock` | Active provider: `mock`, `gemini`, `openai`, `claude`, `ollama` |
+| `LLM_PROVIDER` | `mock` | Active provider: `mock` (instant offline), `gemini`, `openai`, `claude`, `ollama` |
+| `LLM_MODEL` | `gemini-3.8-flash` | LLM model identifier for live API calls |
 | `GEMINI_API_KEY` | *(empty)* | Google Gemini API key |
 | `OPENAI_API_KEY` | *(empty)* | OpenAI API key |
 | `ANTHROPIC_API_KEY` | *(empty)* | Anthropic Claude API key |
@@ -157,13 +163,15 @@ Ablation evaluation was conducted across 45 labeled candidate resumes across 3 r
 | `PARSE_CONFIDENCE_THRESHOLD` | `0.60` | Threshold below which parser invokes LLM fallback |
 | `COUNTERFACTUAL_DELTA_THRESHOLD` | `0.05` | Maximum allowable score delta on demographic swap |
 
+> **Note on Mock vs. Live LLM:** By default, `LLM_PROVIDER=mock` runs with zero latency and requires no API keys. When using live providers like Gemini, ensure your API quota supports batch screening requests.
+
 ---
 
 ## 7. Testing
 
-Run the comprehensive 92-test test suite across all 10 phases:
+Run the automated test suite covering parsing, deterministic scoring math, EEOC bias detection, and API routes:
 ```bash
-pytest -v
+pytest -v tests
 ```
 
 ---
@@ -171,6 +179,6 @@ pytest -v
 ## 8. Ethical Considerations & Limitations
 
 1. **Human-in-the-Loop Required**: RankWise is a decision-support system, not an autonomous hiring agent. Shortlisting and hiring decisions must always be confirmed by human recruiters.
-2. **Blind Mode & Counterfactual Audits**: Proactively mitigates unconscious bias by redacting names, pronouns, and graduation years, and verifying score invariance.
-3. **EEOC Adverse Impact Compliance**: Continuously reports the four-fifths ratio across demographic cohorts to prevent disparate impact.
-4. **Scorer Attribute Isolation**: A strict unit test asserts that protected attributes can never be passed as features into the scoring formulas.
+2. **Blind Mode & Counterfactual Audits**: Proactively mitigates unconscious bias by redacting names, contact info, pronouns, and graduation years, and verifying score invariance.
+3. **EEOC Adverse Impact Compliance**: Continuously reports the four-fifths (80%) ratio across demographic cohorts to prevent disparate impact.
+4. **Scorer Attribute Isolation**: Strict unit tests assert that protected demographic attributes can never be passed as features into the scoring formulas.
